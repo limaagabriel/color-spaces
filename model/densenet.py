@@ -51,7 +51,8 @@ class DenseLayer(nn.Module):
 			if self.compression_factor > 0:
 				t = F.dropout(t, p=self.compression_factor,
 								training=self.training)
-			return torch.cat([current_x, t])
+			print(current_x.size())
+			return torch.cat([current_x, t], dim=1)
 
 		return reduce(reducer, self.layers, x)
 

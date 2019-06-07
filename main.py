@@ -1,29 +1,40 @@
 import os
 import torch
 from torch import nn, optim
+from torchvision import transforms
+from data.patch import PatchDataset
 from model.densenet import DenseNet
 from torch.utils.data import DataLoader
-from torchvision.datasets import ImageNet
 
+# Model parameters
 growth = 32
-batch_size = 32
-num_classes = 3
+batch_size = 4
+learning_rate = 0.01
 num_input_features = 3
 
+# Training parameters
 epochs = 100000
 
-train_dataset = ImageNet(os.environ.get('IMAGENET_PATH'),
-							split='train', download=True)
-valid_dataset = ImageNet(os.environ.get('IMAGENET_PATH'),
-							split='val', download=True)
+# Input preprocessing
+transform = transforms.Compose([
+	transforms.Resize((224, 224)),
+	transforms.ToTensor()
+])
+
+train_dataset = PatchDataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
+								split='train', transform=transform)
+valid_dataset = PatchDataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
+								split='valid', transform=transform)
+test_dataset = PatchDataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
+								split='test', transform=transform)
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
-
-model = DenseNet(num_input_features, growth, num_classes)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+model = DenseNet(num_input_features, growth, train_dataset.num_classes)
+optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
 for epoch in range(epochs):
 	train_loss = 0

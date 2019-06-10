@@ -51,7 +51,6 @@ class DenseLayer(nn.Module):
 			if self.compression_factor > 0:
 				t = F.dropout(t, p=self.compression_factor,
 								training=self.training)
-			print(current_x.size())
 			return torch.cat([current_x, t], dim=1)
 
 		return reduce(reducer, self.layers, x)
@@ -67,12 +66,10 @@ class DenseNet(nn.Module):
 		self.compression = compression
 		self.block_config = block_config
 
-		before_dense_blocks, out_f = self.__get_before_dense_blocks(in_features)
-		dense_blocks, out_f = self.__get_dense_blocks(out_f)
-		after_dense_blocks, out_f = self.__get_after_dense_blocks(out_f)
+		self.pre_dense_blocks, out_f = self.__get_before_dense_blocks(in_features)
+		self.dense_blocks, out_f = self.__get_dense_blocks(out_f)
+		self.post_dense_blocks, out_f = self.__get_after_dense_blocks(out_f)
 
-		layers = before_dense_blocks + dense_blocks + after_dense_blocks
-		self.layers = nn.Sequential(*layers)
 		self.classifier = nn.Linear(out_f, num_classes)
 
 	def __get_transition_layer(self, features):
@@ -87,35 +84,44 @@ class DenseNet(nn.Module):
 		layers = [
 			nn.Conv2d(in_features, out_features, 7, stride=2, padding=3),
 			nn.BatchNorm2d(out_features),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+			nn.ReLU(),
+			nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 		]
 
-		return layers, out_features
+		return nn.Sequential(*layers), out_features
 
 	def __get_dense_blocks(self, in_features):
-		def mapper(pack):
-			index, depth = pack
+		layers = []
+		out_features = 0
+
+		for index, depth in enumerate(self.block_config):
 			acc_config = sum(self.block_config[:index])
 			in_f = in_features + (acc_config * self.growth)
 			dense_layer = DenseLayer(in_f, depth, self.growth,
 					bottleneck=self.bottleneck, compression=self.compression)
 
-			if index >= len(self.block_config) - 1:
-				return dense_layer
+			out_features = dense_layer.output()
+			if index == (len(self.block_config) - 1):
+				layers.append(dense_layer)
+				continue
 
-			return nn.Sequential(
+			in_f = in_f // 2
+			layers.append(nn.Sequential(
 				dense_layer,
 				self.__get_transition_layer(dense_layer.output())
-			)
+			))
 
-		layers = list(map(mapper, enumerate(self.block_config)))
-		return layers, (in_features + (sum(self.block_config) * self.growth))
+		return nn.Sequential(*layers), out_features
 
 	def __get_after_dense_blocks(self, in_features):
-		return [ nn.BatchNorm2d(in_features) ], in_features
+		return nn.Sequential(nn.BatchNorm2d(in_features)), in_features
 
 	def forward(self, x):
-		y = self.layers(x)
-		return self.classifier(y)
+		x = self.pre_dense_blocks(x)
+		x = self.dense_blocks(x)
+		x = self.post_dense_blocks(x)
 
+		y = F.relu(x, inplace=True)
+		y = F.adaptive_avg_pool2d(y, (1, 1)).view(x.size(0), -1)
+		y = self.classifier(y)
+		return y

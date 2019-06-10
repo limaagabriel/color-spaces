@@ -5,6 +5,10 @@ from torchvision import transforms
 from data.patch import PatchDataset
 from model.densenet import DenseNet
 from torch.utils.data import DataLoader
+from torchvision.datasets import CIFAR10
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print('Running on {} device'.format(device))
 
 # Model parameters
 growth = 32
@@ -33,8 +37,8 @@ valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 criterion = nn.CrossEntropyLoss()
-model = DenseNet(num_input_features, growth, train_dataset.num_classes)
 optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+model = DenseNet(num_input_features, growth, train_dataset.num_classes);to(device)
 
 for epoch in range(epochs):
 	train_loss = 0
@@ -42,23 +46,30 @@ for epoch in range(epochs):
 
 	model.train()
 	for x, y in train_loader:
+		x = x.to(device)
+		y = y.to(device)
 		optimizer.zero_grad()
 
-		yhat = model(x)
+		yhat = model(x).to(device)
 		loss = criterion(yhat, y)
 		loss.backward()
 		optimizer.step()
 
-		running_loss += loss.item()
+		train_loss += loss.item()
 	train_loss = train_loss / len(train_loader)
 
 	model.eval()
 	with torch.no_grad():
 		for x, y in valid_loader:
-			yhat = model(x)
+			x = x.to(device)
+			y = y.to(device)
+
+			yhat = model(x).to(device)
 			loss = criterion(yhat, y)
 			valid_loss += loss.item()
 		valid_loss = valid_loss / len(valid_loader)
+
+	print('Training loss: {}\t Validation loss: {}'.format(train_loss, valid_loss))
 
 
 

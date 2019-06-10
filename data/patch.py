@@ -1,4 +1,5 @@
 import os
+import time
 import torch
 import numpy as np
 from PIL import Image
@@ -13,6 +14,8 @@ class PatchDataset(Dataset):
 		self.class_mapper = self.__get_class_mapper(root)
 		self.patches = self.__load_patches()
 
+		print('[PatchDataset] {} dataset from {} loaded!'.format(split, root))
+
 	@property
 	def num_classes(self):
 		return len(self.class_mapper)
@@ -24,8 +27,8 @@ class PatchDataset(Dataset):
 		with open(os.path.join(root, 'classes.txt'), 'r+') as f:
 			for line in f:
 				if line not in mapper:
-					i = i + 1
 					mapper[line.strip()] = i
+					i = i + 1
 
 		return mapper
 
@@ -53,6 +56,7 @@ class PatchDataset(Dataset):
 		return make_samples_generator(files)
 
 	def __load_patches(self):
+		data = []
 		patches = []
 
 		for image_path, annotation_path in self.__get_samples():
@@ -67,20 +71,22 @@ class PatchDataset(Dataset):
 				h = int(box.find('ymax').text) - int(box.find('ymin').text)
 				class_id = self.class_mapper.get(obj.find('name').text.strip())
 
-				patches.append((image_path, (x, y, w, h), class_id))
+				data.append((image_path, (x, y, w, h), class_id))
+
+		for path, (x, y, w, h), class_id in data:
+			mat = np.asarray(Image.open(path))
+			sample = Image.fromarray(mat[y:y + h, x:x + w, :])
+			patches.append((sample, class_id))
+
 		return patches
 
 	def __len__(self):
 		return len(self.patches)
 
 	def __getitem__(self, index):
-		path, (x, y, w, h), class_id = self.patches[index]
-		mat = np.asarray(Image.open(path))
-		
-		sample = Image.fromarray(mat[y:y + h, x:x + w, :])
-		output = torch.tensor([class_id])
+		sample, class_id = self.patches[index]
 
 		if self.transform is not None:
 			sample = self.transform(sample)
 
-		return sample, output
+		return sample, class_id

@@ -108,5 +108,6 @@ with torch.no_grad():
 		test_acc += torch.sum(yhat == y)
 	
 	test_acc = test_acc / len(test_loader)
+	print(test_acc)
 		
 

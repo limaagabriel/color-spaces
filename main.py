@@ -18,7 +18,7 @@ print(message.format(device, torch.cuda.is_available()))
 train = False
 growth = 32
 batch_size = 4
-learning_rate = 0.01
+learning_rate = 1e-4
 num_input_features = 3
 
 # Training parameters
@@ -45,7 +45,7 @@ best_validation_loss = sys.maxsize
 criterion = nn.CrossEntropyLoss()
 model_path =  os.path.join('model', 'saved_models')
 model = DenseNet(num_input_features, growth, train_dataset.num_classes).to(device)
-optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 if not os.path.exists(model_path):
 	os.mkdir(model_path)

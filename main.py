@@ -9,8 +9,9 @@ from model.densenet import DenseNet
 from torch.utils.data import DataLoader
 from torchvision.datasets import CIFAR10
 
+message = 'Running on {} device (cuda.is_available={})'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print('Running on {} device'.format(device))
+print(message.format(device, torch.cuda.is_available()))
 
 # Model parameters
 growth = 32

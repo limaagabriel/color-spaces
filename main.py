@@ -2,20 +2,22 @@ import os
 import sys
 import torch
 import shutil
-from torch import nn, optim
+
+import torchvision
 import torch.nn.functional as F
-from torchvision import transforms
+from torch import nn, optim
+from torch.utils.data import DataLoader
+
 from data.patch import PatchDataset
 from model.densenet import DenseNet
-from torch.utils.data import DataLoader
-from torchvision.datasets import CIFAR10
+from data.preprocessing import transforms
 
 message = 'Running on {} device (cuda.is_available={})'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(message.format(device, torch.cuda.is_available()))
 
 # Model parameters
-train = False
+train = True
 growth = 32
 batch_size = 4
 learning_rate = 1e-4
@@ -25,9 +27,10 @@ num_input_features = 3
 epochs = 100000
 
 # Input preprocessing
-transform = transforms.Compose([
-	transforms.Resize((224, 224)),
-	transforms.ToTensor()
+transform = torchvision.transforms.Compose([
+	torchvision.transforms.Resize((224, 224)),
+	transforms.ToColorSpace('HSV'),
+	torchvision.transforms.ToTensor()
 ])
 
 train_dataset = PatchDataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
@@ -44,8 +47,8 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 best_validation_loss = sys.maxsize
 criterion = nn.CrossEntropyLoss()
 model_path =  os.path.join('model', 'saved_models')
-model = DenseNet(num_input_features, growth, train_dataset.num_classes).to(device)
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+model =  torchvision.models.densenet161(drop_rate=0.5, num_classes=train_dataset.num_classes).to(device)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0.001)
 
 if not os.path.exists(model_path):
 	os.mkdir(model_path)

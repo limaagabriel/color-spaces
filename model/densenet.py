@@ -3,6 +3,8 @@ from torch import nn
 from functools import reduce
 import torch.nn.functional as F
 
+from model import Classifier
+
 class DenseLayer(nn.Module):
 	def __init__(self, in_features, depth, growth, bottleneck, compression):
 		super(DenseLayer, self).__init__()
@@ -56,7 +58,7 @@ class DenseLayer(nn.Module):
 		return reduce(reducer, self.layers, x)
 
 class DenseNet(nn.Module):
-	def __init__(self, in_features, growth, num_classes,
+	def __init__(self, in_features, growth, outputs,
 					block_config=(6, 12, 24, 16),
 					bottleneck=4, compression=0.5):
 		super(DenseNet, self).__init__()
@@ -70,7 +72,7 @@ class DenseNet(nn.Module):
 		self.dense_blocks, out_f = self.__get_dense_blocks(out_f)
 		self.post_dense_blocks, out_f = self.__get_after_dense_blocks(out_f)
 
-		self.classifier = nn.Linear(out_f, num_classes)
+		self.classifier = nn.Linear(out_f, outputs)
 
 	def __get_transition_layer(self, features):
 		return nn.Sequential(
@@ -125,3 +127,6 @@ class DenseNet(nn.Module):
 		y = F.adaptive_avg_pool2d(y, (1, 1)).view(x.size(0), -1)
 		y = self.classifier(y)
 		return y
+
+class DenseNetClassifier(Classifier):
+	module = DenseNet

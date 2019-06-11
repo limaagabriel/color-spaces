@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import shutil
 from torch import nn, optim
@@ -37,11 +38,11 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
-best_validation_loss = 0
+best_validation_loss = sys.maxsize
 criterion = nn.CrossEntropyLoss()
 model_path =  os.path.join('model', 'saved_models')
-optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 model = DenseNet(num_input_features, growth, train_dataset.num_classes).to(device)
+optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
 if not os.path.exists(model_path):
 	os.mkdir(model_path)
@@ -78,7 +79,12 @@ for epoch in range(epochs):
 		valid_loss = valid_loss / len(valid_loader)
 
 		if valid_loss < best_validation_loss:
+			best_validation_loss = valid_loss
 			path = os.path.join(model_path, '{}.pth'.format(model.__class__.__name__))
+
+			if os.path.exists(path):
+				os.remove(path)
+
 			torch.save(model.state_dict(), path)
 
 	print('Training loss: {}\t Validation loss: {}'.format(train_loss, valid_loss))

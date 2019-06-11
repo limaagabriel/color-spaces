@@ -3,6 +3,7 @@ import sys
 import torch
 import shutil
 from torch import nn, optim
+import torch.nn.functional as F
 from torchvision import transforms
 from data.patch import PatchDataset
 from model.densenet import DenseNet
@@ -14,6 +15,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(message.format(device, torch.cuda.is_available()))
 
 # Model parameters
+train = False
 growth = 32
 batch_size = 4
 learning_rate = 0.01
@@ -51,6 +53,8 @@ else:
 	shutil.rmtree(model_path)
 
 for epoch in range(epochs):
+	if not train:
+		break
 	train_loss = 0
 	valid_loss = 0
 
@@ -90,4 +94,19 @@ for epoch in range(epochs):
 
 	print('Training loss: {}\t Validation loss: {}'.format(train_loss, valid_loss))
 
+model.eval()
+with torch.no_grad():
+	test_acc = 0
+
+	for x, y in test_loader:
+		if train:
+			break
+
+		x = x.to(device)
+		y = y.to(device)
+		yhat = F.softmax(model(x).to(device), dim=1).argmax(dim=1)
+		test_acc += torch.sum(yhat == y)
+	
+	test_acc = test_acc / len(test_loader)
+		
 

@@ -58,7 +58,7 @@ class DenseLayer(nn.Module):
 		return reduce(reducer, self.layers, x)
 
 class DenseNet(nn.Module):
-	def __init__(self, in_features, growth, outputs,
+	def __init__(self, in_features, growth, num_classes,
 					block_config=(6, 12, 24, 16),
 					bottleneck=4, compression=0.5):
 		super(DenseNet, self).__init__()
@@ -72,7 +72,7 @@ class DenseNet(nn.Module):
 		self.dense_blocks, out_f = self.__get_dense_blocks(out_f)
 		self.post_dense_blocks, out_f = self.__get_after_dense_blocks(out_f)
 
-		self.classifier = nn.Linear(out_f, outputs)
+		self.classifier = nn.Linear(out_f, num_classes)
 
 	def __get_transition_layer(self, features):
 		return nn.Sequential(

@@ -9,27 +9,16 @@ from torch import nn, optim
 from torch.utils.data import DataLoader
 
 from data.patch import PatchDataset
-from model.densenet import DenseNet
+from model.densenet import DenseNetClassifier
 from data.preprocessing import transforms
 
-message = 'Running on {} device (cuda.is_available={})'
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(message.format(device, torch.cuda.is_available()))
-
-# Model parameters
-train = True
-growth = 32
-batch_size = 4
-learning_rate = 1e-4
-num_input_features = 3
-
 # Training parameters
-epochs = 100000
+epochs = 1
+batch_size = 8
 
 # Input preprocessing
 transform = torchvision.transforms.Compose([
 	torchvision.transforms.Resize((224, 224)),
-	transforms.ToColorSpace('HSV'),
 	torchvision.transforms.ToTensor()
 ])
 
@@ -44,73 +33,25 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
-best_validation_loss = sys.maxsize
-criterion = nn.CrossEntropyLoss()
+model_parameters = {
+	'growth': 32,
+	'bottleneck': 4,
+	'in_features': 3,
+	'compression': 0.5,
+	'num_classes': train_dataset.num_classes,
+}
+
+optimizer_parameters = {
+	'lr': 1e-4,
+	'weight_decay': 0.001
+}
+
 model_path =  os.path.join('model', 'saved_models')
-model =  torchvision.models.densenet161(drop_rate=0.5, num_classes=train_dataset.num_classes).to(device)
-optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0.001)
 
-if not os.path.exists(model_path):
-	os.mkdir(model_path)
-else:
-	shutil.rmtree(model_path)
+model = DenseNetClassifier(**model_parameters, verbose=True)
+model.set_optimizer(optim.Adam, **optimizer_parameters)
+model.set_loss_criterion(nn.CrossEntropyLoss)
 
-for epoch in range(epochs):
-	if not train:
-		break
-	train_loss = 0
-	valid_loss = 0
-
-	model.train()
-	for x, y in train_loader:
-		x = x.to(device)
-		y = y.to(device)
-		optimizer.zero_grad()
-
-		yhat = model(x).to(device)
-		loss = criterion(yhat, y)
-		loss.backward()
-		optimizer.step()
-
-		train_loss += loss.item()
-	train_loss = train_loss / len(train_loader)
-
-	model.eval()
-	with torch.no_grad():
-		for x, y in valid_loader:
-			x = x.to(device)
-			y = y.to(device)
-
-			yhat = model(x).to(device)
-			loss = criterion(yhat, y)
-			valid_loss += loss.item()
-		valid_loss = valid_loss / len(valid_loader)
-
-		if valid_loss < best_validation_loss:
-			best_validation_loss = valid_loss
-			path = os.path.join(model_path, '{}.pth'.format(model.__class__.__name__))
-
-			if os.path.exists(path):
-				os.remove(path)
-
-			torch.save(model.state_dict(), path)
-
-	print('Training loss: {}\t Validation loss: {}'.format(train_loss, valid_loss))
-
-model.eval()
-with torch.no_grad():
-	test_acc = 0
-
-	for x, y in test_loader:
-		if train:
-			break
-
-		x = x.to(device)
-		y = y.to(device)
-		yhat = F.softmax(model(x).to(device), dim=1).argmax(dim=1)
-		test_acc += torch.sum(yhat == y)
-	
-	test_acc = test_acc / len(test_loader)
-	print(test_acc)
-		
+model.fit(epochs, train_loader, valid_loader)
+print(model.score_loader(test_loader))
 

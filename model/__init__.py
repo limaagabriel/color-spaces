@@ -75,14 +75,14 @@ class Classifier(ABC):
 		return valid_loss
 
 	def __save_model(self, current_loss, best_loss):
-		if best_loss < current_loss:
+		if current_loss < best_loss:
 			args = self.__params['args']
 			kwargs = self.__params['kwargs']
 			self.__best_model = self.module(*args, **kwargs)
 			self.__best_model.load_state_dict(self.__model.state_dict())
 
-			return best_loss
-		return current_loss
+			return current_loss
+		return best_loss
 
 	def fit(self, epochs, train_loader, valid_loader):
 		best_valid_loss = sys.maxsize

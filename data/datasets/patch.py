@@ -38,7 +38,6 @@ class PatchDataset(Dataset):
 			return os.path.isfile(path)
 
 		def make_samples_generator(files):
-			samples = [] 
 			other_files = list(filter(lambda x: not '.xml' in x, files))
 			annotation_files = list(filter(lambda x: '.xml' in x, files))
 

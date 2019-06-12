@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch import nn, optim
 from torch.utils.data import DataLoader
 
-from data.patch import PatchDataset
+from data.datasets.patch import PatchDataset
 from model.densenet import DenseNetClassifier
 from data.preprocessing import transforms
 

@@ -99,13 +99,13 @@ class Classifier(ABC):
 
 	def predict(self, x):
 		self.__verify_predict_dependencies()
-		probabilities = F.softmax(self.__best_model(x))
+		probabilities = F.softmax(self.__best_model(x), dim=1)
 		return probabilities.argmax(dim=1)
 
 	def score(self, x, y):
 		yhat = self.predict(x)
 		accuracy = torch.sum(y == yhat)
-		return accuracy
+		return float(accuracy.item()) / yhat.size()[0]
 
 	def score_loader(self, loader):
 		score = 0

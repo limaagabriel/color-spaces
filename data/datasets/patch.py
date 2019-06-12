@@ -74,7 +74,7 @@ class PatchDataset(Dataset):
 
 		for path, (x, y, w, h), class_id in data:
 			mat = np.asarray(Image.open(path))
-			sample = mat[y:y + h, x:x + w, :]
+			sample = Image.fromarray(mat[y:y + h, x:x + w, :])
 			patches.append((sample, class_id))
 
 		return patches
@@ -89,35 +89,3 @@ class PatchDataset(Dataset):
 			sample = self.transform(sample)
 
 		return sample, class_id
-
-if __name__ == '__main__':
-	import h5py
-	transform = None
-	train_dataset = PatchDataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
-								split='train', transform=transform)
-	valid_dataset = PatchDataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
-								split='valid', transform=transform)
-	test_dataset = PatchDataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
-								split='test', transform=transform)
-	
-	def get_data(dataset, index):
-		data = []
-
-		for patch in dataset.patches:
-			item = patch[index]
-			data.append(item)
-
-		return np.array(data)
-
-	with h5py.File('helmintos.h5', 'w') as f:
-		splits = [
-			('train', train_dataset),
-			('valid', valid_dataset),
-			('test', test_dataset)
-		]
-
-		for split, dataset in splits:
-			group = f.create_group(split)
-			group.create_dataset('x', data=get_data(dataset, 0))
-			group.create_dataset('y', data=get_data(dataset, 1))
-

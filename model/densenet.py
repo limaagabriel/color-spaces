@@ -3,6 +3,8 @@ from torch import nn
 from functools import reduce
 import torch.nn.functional as F
 
+from model import Classifier
+
 class DenseLayer(nn.Module):
 	def __init__(self, in_features, depth, growth, bottleneck, compression):
 		super(DenseLayer, self).__init__()
@@ -125,3 +127,6 @@ class DenseNet(nn.Module):
 		y = F.adaptive_avg_pool2d(y, (1, 1)).view(x.size(0), -1)
 		y = self.classifier(y)
 		return y
+
+class DenseNetClassifier(Classifier):
+	module = DenseNet

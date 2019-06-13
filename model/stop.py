@@ -10,6 +10,10 @@ class StopCriterionDefinition(ABC):
 	def initialize(self):
 		self.__iterations = 0
 
+	@property
+	def iterations(self):
+		return self.__iterations
+
 	def __call__(self, valid_loss):
 		self.__iterations += 1
 		return self.check(self.__iterations, valid_loss)

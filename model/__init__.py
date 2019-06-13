@@ -109,7 +109,7 @@ class Classifier(ABC):
 
 			if self.__verbose:
 				message = 'Epoch {} losses: {} (train)\t{} (valid)'
-				print(message.format(epoch, train_loss, valid_loss))
+				print(message.format(stop_criterion.iterations, train_loss, valid_loss))
 
 	def predict(self, x):
 		self.__verify_predict_dependencies()

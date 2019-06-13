@@ -8,25 +8,26 @@ import torch.nn.functional as F
 from torch import nn, optim
 from torch.utils.data import DataLoader
 
-from data.datasets.patch import PatchDataset
+from data.datasets.h5 import H5Dataset
 from model.densenet import DenseNetClassifier
 from data.preprocessing import transforms
 
 # Training parameters
-epochs = 1
+epochs = 100000
 batch_size = 8
 
 # Input preprocessing
 transform = torchvision.transforms.Compose([
+	torchvision.transforms.ToPILImage(),
 	torchvision.transforms.Resize((224, 224)),
 	torchvision.transforms.ToTensor()
 ])
 
-train_dataset = PatchDataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
+train_dataset = H5Dataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
 								split='train', transform=transform)
-valid_dataset = PatchDataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
+valid_dataset = H5Dataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
 								split='valid', transform=transform)
-test_dataset = PatchDataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
+test_dataset = H5Dataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
 								split='test', transform=transform)
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -38,7 +39,7 @@ model_parameters = {
 	'bottleneck': 4,
 	'in_features': 3,
 	'compression': 0.5,
-	'num_classes': train_dataset.num_classes,
+	'num_classes': 7,
 }
 
 optimizer_parameters = {

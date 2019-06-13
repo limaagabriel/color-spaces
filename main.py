@@ -2,6 +2,10 @@ import os
 import sys
 import torch
 import shutil
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('agg')
 
 import torchvision
 import torch.nn.functional as F
@@ -33,6 +37,23 @@ optimizer_parameters = {
 	'lr': 1e-4
 }
 
+def plot_track(title, track):
+	legend = [ key for key in track ]
+
+	for key in track:
+		x = range(len(track[key]))
+		y = track[key]
+
+		plt.plot(x, y)
+
+	plt.title(title)
+	plt.xlabel('Epochs')
+	plt.ylabel('Loss')
+	plt.legend(legend)
+	plt.savefig('{}.png'.format(title))
+	plt.clf()
+	plt.close()
+
 for color_space in ['CIELab', 'HSV', 'RGB']:
 	transform = torchvision.transforms.Compose([
 		torchvision.transforms.ToPILImage(),
@@ -54,8 +75,10 @@ for color_space in ['CIELab', 'HSV', 'RGB']:
 	model.set_optimizer(optim.Adam, **optimizer_parameters)
 	model.set_loss_criterion(nn.CrossEntropyLoss)
 
-	model.fit(train_loader, valid_loader, stop_criterion)
+	track = model.fit(train_loader, valid_loader, stop_criterion)
 	score = model.score_from_loader(test_loader)
 	model.save('densenet_{}_{}.pth'.format(color_space, score))
+
+	plot_track(color_space, track)
 	print('Color space \'{}\': {}'.format(color_space, score))
 

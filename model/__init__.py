@@ -6,6 +6,7 @@ from abc import ABC
 
 
 class Classifier(ABC):
+	gain = 'relu'
 	module = None
 
 	def __init__(self, verbose=False, *args, **kwargs):
@@ -18,6 +19,14 @@ class Classifier(ABC):
 		self.__optimizer = None
 		self.__criterion = None
 		self.__verbose = verbose
+
+		def weights_init(m):
+			gain = torch.nn.init.calculate_gain(self.gain)
+			if isinstance(m, torch.nn.Conv2d):
+				torch.nn.init.xavier_uniform_(m.weight.data, gain=gain)
+				torch.nn.init.uniform_(m.bias.data, -0.5, 0.5)
+
+		self.__model.apply(weights_init)
 
 		if self.__verbose:
 			message = 'Using {} device (cuda.is_available={})'
@@ -84,11 +93,12 @@ class Classifier(ABC):
 			return current_loss
 		return best_loss
 
-	def fit(self, epochs, train_loader, valid_loader):
+	def fit(self, train_loader, valid_loader, stop_criterion):
+		stop_criterion.initialize()
 		best_valid_loss = sys.maxsize
 		self.__verify_training_dependencies()
 
-		for epoch in range(epochs):
+		while not stop_criterion(best_valid_loss):
 			train_loss = self.__train_step(train_loader)
 			valid_loss = self.__valid_step(valid_loader)
 			best_valid_loss = self.__save_model(valid_loss, best_valid_loss)

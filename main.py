@@ -9,50 +9,51 @@ from torch import nn, optim
 from torch.utils.data import DataLoader
 
 from data.datasets.h5 import H5Dataset
-from model.densenet import DenseNetClassifier
 from data.preprocessing import transforms
+
+from model.stop import StopCriterion
+from model.densenet import DenseNetClassifier
 
 # Training parameters
 epochs = 100000
 batch_size = 8
 
 # Input preprocessing
-transform = torchvision.transforms.Compose([
-	torchvision.transforms.ToPILImage(),
-	torchvision.transforms.Resize((224, 224)),
-	torchvision.transforms.ToTensor()
-])
-
-train_dataset = H5Dataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
-								split='train', transform=transform)
-valid_dataset = H5Dataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
-								split='valid', transform=transform)
-test_dataset = H5Dataset(os.environ.get('OBJECT_DETECTION_DATASET_PATH'),
-								split='test', transform=transform)
-
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+root = os.environ.get('OBJECT_DETECTION_DATASET_PATH')
 
 model_parameters = {
 	'growth': 32,
 	'bottleneck': 4,
 	'in_features': 3,
-	'compression': 0.5,
 	'num_classes': 7,
+	'compression': 0.5
 }
 
 optimizer_parameters = {
-	'lr': 1e-4,
-	'weight_decay': 0.001
+	'lr': 1e-4
 }
 
-model_path =  os.path.join('model', 'saved_models')
+for color_space in ['CIELab', 'HSV', 'RGB']:
+	transform = torchvision.transforms.Compose([
+		torchvision.transforms.ToPILImage(),
+		torchvision.transforms.Resize((224, 224)),
+		transforms.ToColorSpace(color_space),
+		torchvision.transforms.ToTensor()
+	])
 
-model = DenseNetClassifier(**model_parameters, verbose=True)
-model.set_optimizer(optim.Adam, **optimizer_parameters)
-model.set_loss_criterion(nn.CrossEntropyLoss)
+	train_dataset = H5Dataset(root, split='train', transform=transform)
+	valid_dataset = H5Dataset(root, split='valid', transform=transform)
+	test_dataset = H5Dataset(root, split='test', transform=transform)
 
-model.fit(epochs, train_loader, valid_loader)
-print(model.score_loader(test_loader))
+	train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+	valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True)
+	test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+
+	stop_criterion = StopCriterion.valid_loss(0.01, max_iterations=epochs)
+	model = DenseNetClassifier(**model_parameters, verbose=True)
+	model.set_optimizer(optim.Adam, **optimizer_parameters)
+	model.set_loss_criterion(nn.CrossEntropyLoss)
+
+	model.fit(train_loader, valid_loader, stop_criterion)
+	print('Color space \'{}\': {}'.format(color_space, model.score_loader(test_loader)))
 

@@ -1,4 +1,4 @@
-from skimage import color
+import cv2
 from abc import ABC, abstractmethod
 
 
@@ -24,9 +24,8 @@ class RGB(ColorSpace):
 
 class CIELab(ColorSpace):
 	def from_rgb(self, image):
-		return (color.rgb2lab(image) * 255).astype('uint8')
-
+		return cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
 
 class HSV(ColorSpace):
 	def from_rgb(self, image):
-		return (color.rgb2hsv(image) * 255).astype('uint8')
+		return cv2.cvtColor(image, cv2.COLOR_RGB2HSV)

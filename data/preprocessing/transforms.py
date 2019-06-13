@@ -9,5 +9,4 @@ class ToColorSpace(object):
 
 	def __call__(self, sample):
 		mat = np.asarray(sample)
-		transformed = self.color_space.from_rgb(mat)
-		return Image.fromarray(transformed)
+		return self.color_space.from_rgb(mat)

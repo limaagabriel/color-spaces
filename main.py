@@ -55,5 +55,7 @@ for color_space in ['CIELab', 'HSV', 'RGB']:
 	model.set_loss_criterion(nn.CrossEntropyLoss)
 
 	model.fit(train_loader, valid_loader, stop_criterion)
-	print('Color space \'{}\': {}'.format(color_space, model.score_loader(test_loader)))
+	score = model.score_from_loader(test_loader)
+	model.save('densenet_{}_{}.pth'.format(color_space, score))
+	print('Color space \'{}\': {}'.format(color_space, score))
 

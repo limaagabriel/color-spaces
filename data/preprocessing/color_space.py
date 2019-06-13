@@ -26,6 +26,7 @@ class CIELab(ColorSpace):
 	def from_rgb(self, image):
 		return cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
 
+
 class HSV(ColorSpace):
 	def from_rgb(self, image):
 		return cv2.cvtColor(image, cv2.COLOR_RGB2HSV)

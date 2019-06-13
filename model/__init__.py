@@ -93,6 +93,10 @@ class Classifier(ABC):
 			return current_loss
 		return best_loss
 
+	def save(self, path):
+		self.__verify_predict_dependencies()
+		torch.save(self.__best_model.state_dict(), path)
+
 	def fit(self, train_loader, valid_loader, stop_criterion):
 		stop_criterion.initialize()
 		best_valid_loss = sys.maxsize
@@ -117,7 +121,7 @@ class Classifier(ABC):
 		accuracy = torch.sum(y == yhat)
 		return float(accuracy.item()) / yhat.size()[0]
 
-	def score_loader(self, loader):
+	def score_from_loader(self, loader):
 		score = 0
 		for x, y in loader:
 			score += self.score(x, y) / len(loader)

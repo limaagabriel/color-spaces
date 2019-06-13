@@ -95,26 +95,42 @@ class Classifier(ABC):
 
 	def save(self, path):
 		self.__verify_predict_dependencies()
+		self.__best_model.eval()
 		torch.save(self.__best_model.state_dict(), path)
 
 	def fit(self, train_loader, valid_loader, stop_criterion):
 		stop_criterion.initialize()
 		best_valid_loss = sys.maxsize
+		track = {'train': [], 'valid': [], 'best_valid': []}
 		self.__verify_training_dependencies()
 
-		while not stop_criterion(best_valid_loss):
-			train_loss = self.__train_step(train_loader)
-			valid_loss = self.__valid_step(valid_loader)
-			best_valid_loss = self.__save_model(valid_loss, best_valid_loss)
+		try:
+			while not stop_criterion(best_valid_loss):
+				train_loss = self.__train_step(train_loader)
+				valid_loss = self.__valid_step(valid_loader)
+				best_valid_loss = self.__save_model(valid_loss, best_valid_loss)
 
-			if self.__verbose:
-				message = 'Epoch {} losses: {} (train)\t{} (valid)'
-				print(message.format(stop_criterion.iterations, train_loss, valid_loss))
+				track['train'].append(train_loss)
+				track['valid'].append(valid_loss)
+				track['best_valid'].append(best_valid_loss)
+
+				if self.__verbose:
+					message = 'Epoch {} losses: {} (train)\t{} (valid)'
+					print(message.format(stop_criterion.iterations, train_loss, valid_loss))
+		except KeyboardInterrupt:
+			print('Interrupted by user')
+
+		return track
 
 	def predict(self, x):
 		self.__verify_predict_dependencies()
-		probabilities = F.softmax(self.__best_model(x), dim=1)
-		return probabilities.argmax(dim=1)
+		self.__best_model.eval()
+		output = None
+
+		with torch.no_grad():
+			probabilities = F.softmax(self.__best_model(x), dim=1)
+			output = probabilities.argmax(dim=1)
+		return output
 
 	def score(self, x, y):
 		yhat = self.predict(x)

@@ -1,5 +1,6 @@
 import sys
 import torch
+import torchvision
 import torch.nn.functional as F
 
 from abc import ABC
@@ -14,7 +15,8 @@ class Classifier(ABC):
 		self.__params = { 'args': args, 'kwargs': kwargs }
 		self.__device = torch.device(device_id)
 
-		self.__model = self.module(*args, **kwargs).to(self.__device)
+		# self.__model = self.module(*args, **kwargs).to(self.__device)
+		self.__model = torchvision.models.densenet161(pretrained=False).to(self.__device)
 		self.__best_model = None
 		self.__optimizer = None
 		self.__criterion = None
@@ -24,7 +26,9 @@ class Classifier(ABC):
 			gain = torch.nn.init.calculate_gain(self.gain)
 			if isinstance(m, torch.nn.Conv2d):
 				torch.nn.init.xavier_uniform_(m.weight.data, gain=gain)
-				torch.nn.init.uniform_(m.bias.data, -0.5, 0.5)
+
+				if m.bias is not None:
+					torch.nn.init.uniform_(m.bias.data, -0.5, 0.5)
 
 		self.__model.apply(weights_init)
 

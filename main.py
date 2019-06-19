@@ -26,11 +26,11 @@ batch_size = 8
 root = os.environ.get('OBJECT_DETECTION_DATASET_PATH')
 
 model_parameters = {
-	'growth': 32,
-	'bottleneck': 4,
+	'bn_size': 4,
+	'drop_rate': 0.5,
 	'in_features': 3,
 	'num_classes': 7,
-	'compression': 0.5
+	'growth_rate': 32
 }
 
 optimizer_parameters = {

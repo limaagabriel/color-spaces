@@ -9,7 +9,11 @@ class H5Dataset(Dataset):
         self.transform = transform
 
         self.__file = h5py.File(path, 'r')
-        self.__dataset = self.__file[split]
+
+        if split == 'valid' and 'valid' not in self.__file:
+            self.split = 'test'
+
+        self.__dataset = self.__file[self.split]
         self.__len = self.__dataset['y'].shape[0]
 
     def __del__(self):

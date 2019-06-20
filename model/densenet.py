@@ -1,4 +1,5 @@
 import torch
+import torchvision
 from torch import nn
 from functools import reduce
 import torch.nn.functional as F
@@ -58,14 +59,14 @@ class DenseLayer(nn.Module):
 		return reduce(reducer, self.layers, x)
 
 class DenseNet(nn.Module):
-	def __init__(self, in_features, growth, num_classes,
+	def __init__(self, in_features, growth_rate, num_classes,
 					block_config=(6, 12, 24, 16),
-					bottleneck=4, compression=0.5):
+					bn_size=4, drop_rate=0.5):
 		super(DenseNet, self).__init__()
 
-		self.growth = growth
-		self.bottleneck = bottleneck
-		self.compression = compression
+		self.growth = growth_rate
+		self.bottleneck = bn_size
+		self.compression = drop_rate
 		self.block_config = block_config
 
 		self.pre_dense_blocks, out_f = self.__get_before_dense_blocks(in_features)

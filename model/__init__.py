@@ -24,7 +24,9 @@ class Classifier(ABC):
 			gain = torch.nn.init.calculate_gain(self.gain)
 			if isinstance(m, torch.nn.Conv2d):
 				torch.nn.init.xavier_uniform_(m.weight.data, gain=gain)
-				torch.nn.init.uniform_(m.bias.data, -0.5, 0.5)
+
+				if m.bias is not None:
+					torch.nn.init.uniform_(m.bias.data, -0.5, 0.5)
 
 		self.__model.apply(weights_init)
 

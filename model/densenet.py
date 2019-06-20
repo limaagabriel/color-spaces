@@ -130,4 +130,4 @@ class DenseNet(nn.Module):
 		return y
 
 class DenseNetClassifier(Classifier):
-	module = torchvision.models.densenet161
+	module = DenseNet
